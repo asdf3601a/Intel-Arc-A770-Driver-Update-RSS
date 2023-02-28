@@ -50,7 +50,7 @@ export default {
 			function (i, elem) {
 				let title = $(this).find('h4').first();
 				let date = $(this).find('div[class^="col-lg-2"]').first();
-				
+
 				let os: string[] = [];
 				$(this).find('span[class^="download-tags"] > span[class~="download-tag"]').each(
 					function (i, elem) {
@@ -86,7 +86,17 @@ export default {
 			"version": "https://jsonfeed.org/version/1",
 			"title": "Intel® Arc™ A770 Drivers",
 			"home_page_url": url,
-			"items": list.map(
+			"items": list.sort(
+				(a, b) => {
+					if (a.date > b.date) {
+						return -1;
+					} else if (a.date < b.date) {
+						return 1;
+					} else {
+						return 0;
+					}
+				}
+			).map(
 				function (elem) {
 					return {
 						"id": elem.version,
@@ -97,7 +107,7 @@ export default {
 					}
 				}
 			),
-		}
+		};
 
 		return new Response(
 			JSON.stringify(feeds),

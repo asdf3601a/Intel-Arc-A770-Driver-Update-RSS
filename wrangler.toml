@@ -1,0 +1,6 @@
+name = "intel-driver-rss"
+main = "src/index.ts"
+compatibility_date = "2023-02-27"
+kv_namespaces = [
+    { binding = "driver", id = "dd874af691ec438b9d87dd42a18deda4" }
+]

@@ -1,0 +1,1 @@
+# Intel-Arc-A770-Driver-Update-RSS

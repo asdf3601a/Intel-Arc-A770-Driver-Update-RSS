@@ -1,120 +1,91 @@
-/**
- * Welcome to Cloudflare Workers! This is your first worker.
- *
- * - Run `wrangler dev src/index.ts` in your terminal to start a development server
- * - Open a browser tab at http://localhost:8787/ to see your worker in action
- * - Run `wrangler publish src/index.ts --name my-worker` to publish your worker
- *
- * Learn more at https://developers.cloudflare.com/workers/
- */
 import * as cheerio from 'cheerio';
 
-export interface Env {
-	// Example binding to KV. Learn more at https://developers.cloudflare.com/workers/runtime-apis/kv/
-	// MY_KV_NAMESPACE: KVNamespace;
-	//
-	// Example binding to Durable Object. Learn more at https://developers.cloudflare.com/workers/runtime-apis/durable-objects/
-	// MY_DURABLE_OBJECT: DurableObjectNamespace;
-	//
-	// Example binding to R2. Learn more at https://developers.cloudflare.com/workers/runtime-apis/r2/
-	// MY_BUCKET: R2Bucket;
-	//
-	// Example binding to a Service. Learn more at https://developers.cloudflare.com/workers/runtime-apis/service-bindings/
-	// MY_SERVICE: Fetcher;
+export interface Item {
+    id: string;
+    url: string;
+    title: string;
+    content_text: string;
+    date_published: Date;
 }
 
-export interface Driver {
-	title: String;
-	date: Date;
-	os: string[];
-	download: string;
-	version: string;
+export interface Feed {
+    version: string;
+    title: string;
+    home_page_url: URL;
+    items: Item[];
 }
 
 export default {
-	async fetch(
-		request: Request,
-		env: Env,
-		ctx: ExecutionContext
-	): Promise<Response> {
-		if (request.method != "GET") return new Response(`Method ${request.method} not allowed.`, { status: 405, headers: { Allow: "GET" } });
+    async fetch(req: Request): Promise<Response> {
+        if (req.method != "GET") return new Response(`Method ${req.method} not allowed.`, { status: 405, headers: { Allow: "GET" } });
 
-		let url = "https://www.intel.com.tw/content/www/tw/zh/products/sku/229151/intel-arc-a770-graphics-16gb/downloads.html";
-		let page = await fetch(url);
+        let feed: Feed = {
+            version: "https://jsonfeed.org/version/1",
+            title: "Intel® Arc™ A770 Drivers",
+            home_page_url: new URL("https://www.intel.com.tw/content/www/tw/zh/products/sku/229151/intel-arc-a770-graphics-16gb/downloads.html"),
+            items: []
+        };
 
-		let $ = cheerio.load(await page.text());
+        await fetch(feed.home_page_url.toString()).then(
+            async function (res: Response) {
+                if (!res.ok) return;
+                let $ = cheerio.load(await res.text());
 
-		var list: Driver[] = [];
-		$('div[class^="download-row all"]').each(
-			function (i, elem) {
-				let title = $(this).find('h4').first();
-				let date = $(this).find('div[class^="col-lg-2"]').first();
+                $('div[class^="download-row all"]').each(
+                    function (i, elem) {
+                        let title = $(this).find('h4').first();
+                        let date = $(this).find('div[class^="col-lg-2"]').first();
+                        let description = $(this).find('p[class="download-description"]').first();
+                        let os: string[] = [];
+                        $(this).find('span[class^="download-tags"] > span[class~="download-tag"]').each(
+                            function (i, elem) {
+                                os.push($(this).text().trim())
+                            }
+                        );
+                        let download = () => {
+                            let value = $(this).find('a[class^="btn-download-driver"]').attr('href')
+                            if (value) {
+                                return value;
+                            }
+                            else {
+                                return "";
+                            }
+                        };
+                        let version = $(this).find('p[class^="version"]');
 
-				let os: string[] = [];
-				$(this).find('span[class^="download-tags"] > span[class~="download-tag"]').each(
-					function (i, elem) {
-						os.push($(this).text().trim())
-					}
-				)
+                        feed.items.push(
+                            {
+                                id: version.text().trim(),
+                                url: download().trim(),
+                                title: title.text().trim(),
+                                content_text: `Description: ${description.text().trim()}\nOperating System: ${os.join(", ")}`,
+                                date_published: new Date(date.text())
+                            }
+                        )
+                    }
+                )
+            }
+        );
 
-				let download = () => {
-					let value = $(this).find('a[class^="btn-download-driver"]').attr('href')
-					if (value) {
-						return value
-					}
-					else {
-						return "";
-					}
-				};
+        feed.items.sort(
+            (a, b) => {
+                if (a.date_published > b.date_published) {
+                    return -1;
+                } else if (a.date_published < b.date_published) {
+                    return 1;
+                } else {
+                    return 0;
+                }
+            }
+        );
 
-				let version = $(this).find('p[class^="version"]');
-
-				list.push(
-					{
-						"title": title.text(),
-						"date": new Date(date.text()),
-						"os": os,
-						"download": download(),
-						"version": version.text().trim().replace("Version: ", ""),
-					}
-				);
-			}
-		)
-
-		let feeds = {
-			"version": "https://jsonfeed.org/version/1",
-			"title": "Intel® Arc™ A770 Drivers",
-			"home_page_url": url,
-			"items": list.sort(
-				(a, b) => {
-					if (a.date > b.date) {
-						return -1;
-					} else if (a.date < b.date) {
-						return 1;
-					} else {
-						return 0;
-					}
-				}
-			).map(
-				function (elem) {
-					return {
-						"id": elem.version,
-						"url": elem.download,
-						"title": elem.title,
-						"content_text": "Operating System: " + elem.os.join(", "),
-						"date_published": elem.date.toISOString(),
-					}
-				}
-			),
-		};
-
-		return new Response(
-			JSON.stringify(feeds),
-			{
-				headers: {
-					'content-type': 'application/json;charset=UTF-8',
-				},
-			}
-		);
-	},
-};
+        return new Response(
+            JSON.stringify(feed),
+            {
+                headers: {
+                    'content-type': 'application/json;charset=UTF-8',
+                },
+            }
+        );
+    }
+}

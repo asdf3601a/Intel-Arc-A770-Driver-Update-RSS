@@ -29,7 +29,14 @@ export default {
         await fetch(feed.home_page_url.toString()).then(
             async function (res: Response) {
                 if (!res.ok) return;
-                let $ = cheerio.load(await res.text());
+                let $ = cheerio.load(
+                    await res.text(),
+                    {
+                        xml: {
+                            xmlMode: false,
+                        },
+                    }
+                );
 
                 $('div[class^="download-row all"]').each(
                     function (i, elem) {

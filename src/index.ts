@@ -59,7 +59,7 @@ export default {
                                 url: download().trim(),
                                 title: title.text().trim(),
                                 content_text: `Description: ${description.text().trim()}\nOperating System: ${os.join(", ")}`,
-                                date_published: new Date(date.text())
+                                date_published: new Date(date.text().trim())
                             }
                         )
                     }

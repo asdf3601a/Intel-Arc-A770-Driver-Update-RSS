@@ -52,11 +52,8 @@ function main() {
         return;
     }));
     server.listen(8787, 'localhost');
-    // 吐 Log 的部分，請求比較多的話務必關掉。
+    // 呼吸
     console.log('Server is running at 8787 port on localhost.');
-    server.on('request', (req) => {
-        console.log(`${req.headers.host} - ${new Date(Date.now()).toISOString()} - ${req.method} - ${req.url}`);
-    });
 }
 // 一堆連結
 const home_url = new URL("https://www.intel.com.tw/content/www/tw/zh/products/sku/229151/intel-arc-a770-graphics-16gb/downloads.html");

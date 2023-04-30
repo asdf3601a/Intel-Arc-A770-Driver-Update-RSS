@@ -2,6 +2,11 @@
   "name": "intel-driver-rss",
   "packageManager": "yarn@3.5.0",
   "devDependencies": {
+    "@types/node": "^18.16.3",
     "typescript": "^5.0.4"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.12",
+    "undici": "^5.22.0"
   }
 }

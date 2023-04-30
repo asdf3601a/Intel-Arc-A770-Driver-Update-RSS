@@ -26,53 +26,11 @@ export default {
             items: []
         };
 
-        await fetch(feed.home_page_url.toString()).then(
-            async function (res: Response) {
-                if (!res.ok) return;
-                let $ = cheerio.load(
-                    await res.text(),
-                    {
-                        xml: {
-                            xmlMode: false,
-                        },
-                    }
-                );
+        const whql_url = new URL("https://www.intel.com/content/www/us/en/download/726609/intel-arc-iris-xe-graphics-whql-windows.html");
+        feed.items = feed.items.concat(await this.parser(whql_url));
 
-                $('div[class^="download-row all"]').each(
-                    function (i, elem) {
-                        let title = $(this).find('h4').first();
-                        let date = $(this).find('div[class^="col-lg-2"]').first();
-                        let description = $(this).find('p[class="download-description"]').first();
-                        let os: string[] = [];
-                        $(this).find('span[class^="download-tags"] > span[class~="download-tag"]').each(
-                            function (i, elem) {
-                                os.push($(this).text().trim())
-                            }
-                        );
-                        let download = () => {
-                            let value = $(this).find('a[class^="btn-download-driver"]').attr('href')
-                            if (value) {
-                                return value;
-                            }
-                            else {
-                                return "";
-                            }
-                        };
-                        let version = $(this).find('p[class^="version"]');
-
-                        feed.items.push(
-                            {
-                                id: version.text().trim(),
-                                url: download().trim(),
-                                title: title.text().trim(),
-                                content_text: `Description: ${description.text().trim()}\nOperating System: ${os.join(", ")}`,
-                                date_published: new Date(date.text().trim())
-                            }
-                        )
-                    }
-                )
-            }
-        );
+        let beta_url = new URL("https://www.intel.com/content/www/us/en/download/729157/intel-arc-iris-xe-graphics-beta-windows.html");
+        feed.items = feed.items.concat(await this.parser(beta_url));
 
         feed.items.sort(
             (a, b) => {
@@ -94,5 +52,30 @@ export default {
                 },
             }
         );
+    },
+    async parser(url: URL): Promise<Item[]> {
+        let items: Item[] = [];
+
+        let $ = cheerio.load(
+            await (await fetch(url)).text()
+        );
+
+        let description = $('meta[name^="description"]').attr('content');
+
+        items.push(
+            {
+                id: "Version: " + description?.match(/\d*\.\d*\.\d*\.\d*/gm)?.[0],
+                url: [
+                    url.toString().slice(0, 55),
+                    $('meta[name^="RecommendedDownloadUrl"]').attr('content')?.match(/\/\d{1,}\//gm)?.[0].slice(1, -1),
+                    url.toString().slice(56, )
+                ].join('/'),
+                title: $('meta[name^="title"]').attr('content') + ' ' + $('meta[name^="DownloadVersion"]').attr('content'),
+                content_text: "Description: " + description + "\nOperating System: " + $('meta[name="DownloadOSes"]').attr('content'),
+                date_published: new Date($('meta[name="lastModifieddate"]').attr('content')!)
+            }
+        );
+
+        return items;
     }
 }

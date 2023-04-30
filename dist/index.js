@@ -35,31 +35,39 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const http = __importStar(require("node:http"));
 const cheerio = __importStar(require("cheerio"));
 const undici_1 = require("undici");
+// Http Server
 function main() {
     const server = http.createServer();
     server.on('request', (req, res) => __awaiter(this, void 0, void 0, function* () {
         if (req.method != 'GET' || req.url != '/') {
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
-            res.writeHead(404, "Not Found");
+            res.writeHead(404, 'Not Found');
             res.end();
             return;
         }
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
-        res.writeHead(200, "OK");
+        res.writeHead(200, 'OK');
         res.write(yield feed_provider());
         res.end();
         return;
     }));
-    server.listen(8787);
+    server.listen(8787, 'localhost');
+    // 吐 Log 的部分，請求比較多的話務必關掉。
+    console.log('Server is running at 8787 port on localhost.');
+    server.on('request', (req) => {
+        console.log(`${req.headers.host} - ${new Date(Date.now()).toISOString()} - ${req.method} - ${req.url}`);
+    });
 }
+// 一堆連結
 const home_url = new URL("https://www.intel.com.tw/content/www/tw/zh/products/sku/229151/intel-arc-a770-graphics-16gb/downloads.html");
 const whql_url = new URL("https://www.intel.com/content/www/us/en/download/726609/intel-arc-iris-xe-graphics-whql-windows.html");
 const beta_url = new URL("https://www.intel.com/content/www/us/en/download/729157/intel-arc-iris-xe-graphics-beta-windows.html");
+// 建立一個 Feed 然後回 JSON
 function feed_provider() {
     return __awaiter(this, void 0, void 0, function* () {
         let feed = {
-            version: "https://jsonfeed.org/version/1",
-            title: "Intel® Arc™ A770 Drivers",
+            version: 'https://jsonfeed.org/version/1',
+            title: 'Intel® Arc™ A770 Drivers',
             home_page_url: home_url,
             items: []
         };
@@ -79,24 +87,21 @@ function feed_provider() {
         return JSON.stringify(feed);
     });
 }
+// 抓 Intel 的網站，然後把最新的驅動版本變成 Item
 function parser(url) {
     var _a, _b, _c;
     return __awaiter(this, void 0, void 0, function* () {
         let items = [];
         const { statusCode, headers, trailers, body } = yield (0, undici_1.request)(url);
         if (statusCode != 200)
-            throw Error("Request failed!" + statusCode);
+            throw Error(`${statusCode} Request failed!`);
         let $ = cheerio.load(yield body.text());
         let description = $('meta[name^="description"]').attr('content');
         items.push({
-            id: "Version: " + ((_a = description === null || description === void 0 ? void 0 : description.match(/\d*\.\d*\.\d*\.\d*/gm)) === null || _a === void 0 ? void 0 : _a[0]),
-            url: [
-                url.toString().slice(0, 55),
-                (_c = (_b = $('meta[name^="RecommendedDownloadUrl"]').attr('content')) === null || _b === void 0 ? void 0 : _b.match(/\/\d{1,}\//gm)) === null || _c === void 0 ? void 0 : _c[0].slice(1, -1),
-                url.toString().slice(56)
-            ].join('/'),
-            title: $('meta[name^="title"]').attr('content') + ' ' + $('meta[name^="DownloadVersion"]').attr('content'),
-            content_text: "Description: " + description + "\nOperating System: " + $('meta[name="DownloadOSes"]').attr('content'),
+            id: `Version: ${(_a = description === null || description === void 0 ? void 0 : description.match(/\d*\.\d*\.\d*\.\d*/gm)) === null || _a === void 0 ? void 0 : _a[0]}`,
+            url: `${url.toString().slice(0, 55)}/${(_c = (_b = $('meta[name^="RecommendedDownloadUrl"]').attr('content')) === null || _b === void 0 ? void 0 : _b.match(/\/\d{1,}\//gm)) === null || _c === void 0 ? void 0 : _c[0].slice(1, -1)}/${url.toString().slice(56)}`,
+            title: `${$('meta[name^="title"]').attr('content')} ${$('meta[name^="DownloadVersion"]').attr('content')}`,
+            content_text: `Description: ${description}\nOperating System: ${$('meta[name="DownloadOSes"]').attr('content')}`,
             date_published: new Date($('meta[name="lastModifieddate"]').attr('content'))
         });
         return items;

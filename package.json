@@ -1,0 +1,7 @@
+{
+  "name": "intel-driver-rss",
+  "packageManager": "yarn@3.5.0",
+  "devDependencies": {
+    "typescript": "^5.0.4"
+  }
+}

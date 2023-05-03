@@ -25,9 +25,12 @@ function main() {
         }
     );
 
-    server.listen(8787, 'localhost');
+    // server.listen(8787, 'localhost');
     // 呼吸
-    console.log('Server is running at 8787 port on localhost.');
+    // console.log('Server is running at 8787 port on localhost.');
+    
+    server.listen(8787);
+    console.log('Server is running at 8787 port.');
 }
 
 export interface Item {

@@ -59,9 +59,12 @@ async function feed_provider(): Promise<string> {
         items: []
     };
 
-    feed.items = feed.items.concat(await parser(whql_url));
-    feed.items = feed.items.concat(await parser(beta_url));
-
+    try {
+        feed.items = feed.items.concat(await parser(whql_url));
+        feed.items = feed.items.concat(await parser(beta_url));
+    } catch (error) {
+        console.error(error);
+    }
 
     feed.items.sort(
         (a, b) => {
@@ -83,7 +86,7 @@ async function parser(url: URL) {
     let items: Item[] = [];
 
     const {statusCode, headers, trailers, body} = await request(url);
-    if (statusCode != 200) throw Error(`${statusCode} Request failed!`);
+    if (statusCode != 200) throw new Error(`Status code ${statusCode} error!`);
     
     let $ = cheerio.load(
         await body.text()
@@ -101,7 +104,7 @@ async function parser(url: URL) {
         }
     );
 
-    return items;
+    return items
 }
 
 main()

@@ -68,8 +68,13 @@ function feed_provider() {
             home_page_url: home_url,
             items: []
         };
-        feed.items = feed.items.concat(yield parser(whql_url));
-        feed.items = feed.items.concat(yield parser(beta_url));
+        try {
+            feed.items = feed.items.concat(yield parser(whql_url));
+            feed.items = feed.items.concat(yield parser(beta_url));
+        }
+        catch (error) {
+            console.error(error);
+        }
         feed.items.sort((a, b) => {
             if (a.date_published > b.date_published) {
                 return -1;
@@ -91,7 +96,7 @@ function parser(url) {
         let items = [];
         const { statusCode, headers, trailers, body } = yield (0, undici_1.request)(url);
         if (statusCode != 200)
-            throw Error(`${statusCode} Request failed!`);
+            throw new Error(`Status code ${statusCode} error!`);
         let $ = cheerio.load(yield body.text());
         let description = $('meta[name^="description"]').attr('content');
         items.push({

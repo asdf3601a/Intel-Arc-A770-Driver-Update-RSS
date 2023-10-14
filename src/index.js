@@ -40,7 +40,7 @@ export default {
 
       item
         .split(';')
-        .filter(e => e.length > 3)
+        .filter(e => e.length > 4)
         .forEach(
           e => {
             let s = e.split(',');

@@ -36,11 +36,11 @@ export default {
 
     item
     .split(';')
-    .filter(e => e.length > 0)
+    .filter(e => e.length > 3)
     .forEach(
       e => {
         let s = e.split(',');
-        feed.items.push({id: s[1], url: s[0]});
+        feed.items.push({id: s[1], title: s[1], url: s[0]});
       }
     )
 

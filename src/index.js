@@ -53,7 +53,7 @@ export default {
         {
           headers: {
             'content-type': 'application/json;charset=UTF-8',
-            'cache-control': 's-maxage=300',
+            'cache-control': 'public, max-age=300',
           }
         }
       )

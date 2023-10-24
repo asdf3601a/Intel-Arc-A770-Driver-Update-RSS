@@ -29,7 +29,7 @@ export default {
         new HTMLRewriter().on(
           'select#version-driver-select>option',
           {
-            element: (element) => { feed.items.push({id: "", title: "", url: `https://www.intel.com${element.getAttribute('value')}`}) },
+            element: (element) => { feed.items.push({ id: "", title: "", url: `https://www.intel.com${element.getAttribute('value')}` }) },
             text: (text) => { feed.items.at(-1).id += `${text.text.replace(' (Latest)', '')}`; feed.items.at(-1).title += `${text.text.replace(' (Latest)', '')}` },
           }
         )

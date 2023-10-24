@@ -18,7 +18,6 @@ export default {
     let response = await cache.match(cache_key);
 
     if (!response) {
-      var item = "";
       var feed = {
         version: "https://jsonfeed.org/version/1",
         title: "Intel® Arc™ A770 Drivers",
@@ -30,23 +29,13 @@ export default {
         new HTMLRewriter().on(
           'select#version-driver-select>option',
           {
-            element: (element) => { item += `https://www.intel.com${element.getAttribute('value')},` },
-            text: (text) => { item += `${text.text.replace(' (Latest)', '')};` },
+            element: (element) => { feed.items.push({id: "", title: "", url: `https://www.intel.com${element.getAttribute('value')}`}) },
+            text: (text) => { feed.items.at(-1).id += `${text.text.replace(' (Latest)', '')}`; feed.items.at(-1).title += `${text.text.replace(' (Latest)', '')}` },
           }
         )
           .transform(site)
           .arrayBuffer()
       )
-
-      item
-        .split(';')
-        .filter(e => e.length > 4)
-        .forEach(
-          e => {
-            let s = e.split(',');
-            feed.items.push({ id: s[1], title: s[1], url: s[0] });
-          }
-        )
 
       response = new Response(
         JSON.stringify(feed),

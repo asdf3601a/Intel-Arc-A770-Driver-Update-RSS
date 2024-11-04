@@ -58,53 +58,31 @@ export default {
                 ctx.waitUntil(cache.put(cache_key, res.clone()))
             }
 
-            if (req_url.pathname.match(new RegExp(/^\/MOTC\/?/g))) {
-                const motc_url = 'https://www.motcmpb.gov.tw/Information/RSS?siteId=1&nodeId=483'
-                const motc_site = await fetch(motc_url)
-
-                console.log(`MOTC fetch status is ${motc_site.status}`)
+            if (req_url.pathname.match(new RegExp(/^\/fox\/?/g))) {
+                const fox_newlist_url = 'https://www.fox.net.tw/public/content/newslist/'
+                const fox_newlist = await fetch(fox_newlist_url)
 
                 var feed = {
                     version: 'https://jsonfeed.org/version/1',
-                    title: 'MOTC交通部航港局 Maritime Port Bureau. MOTC - 夢想航道 航港知道',
-                    home_page_url: motc_url,
+                    title: 'Fox News List',
+                    home_page_url: fox_newlist_url,
                     items: [],
                 }
 
-                let current_item = {}
+                let fox_news = JSON.parse(await fox_newlist.text())
+                if (fox_news?.status) {
+                    fox_news.result?.forEach(e => {
+                        feed.items.push({id: e._id, title: `［${e.type}］${e.title}`, url: 'https://cloudflare.com/cdn-cgi/trace/ip', date_published: new Date(e.time).toISOString()})
+                    });
+                }
 
-                await new HTMLRewriter()
-                    .on('item', {
-                        element: (e) => current_item = { id: '', title: '', url: '' }
-                    })
-                    .on('item>guid', {
-                        element: (e) => current_item.id = e.text()
-                    })
-                    .on('item>title', {
-                        element: (e) => current_item.title = e.text()
-                    })
-                    .on('item>link', {
-                        element: (e) => current_item.url = e.text()
-                    })
-                    .on('item', {
-                        element: (e) => feed.items.push({...current_item})
-                    })
-                    .transform(motc_site)
-                    .arrayBuffer()
+                res = new Response(JSON.stringify(feed), {
+                    headers: {
+                    'content-type': 'application/json;charset=UTF-8',
+                    'cache-control': 'public, max-age=43200',
+                    },
+                })
 
-                // override topic
-                feed.items = feed.items.filter((item) => item.title.match(/礙航公告/g))
-
-                res = new Response(
-                    JSON.stringify(feed),
-                    {
-                        headers: {
-                        'content-type': 'application/json;charset=UTF-8',
-                        'cache-control': 'public, max-age=43200',
-                        },
-                    }
-                )
-            
                 ctx.waitUntil(cache.put(cache_key, res.clone()))
             }
         }
@@ -115,4 +93,3 @@ export default {
         return res
     }
 }
-

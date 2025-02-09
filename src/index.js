@@ -1,54 +1,33 @@
-/**
- * Welcome to Cloudflare Workers! This is your first worker.
- *
- * - Run `npm run dev` in your terminal to start a development server
- * - Open a browser tab at http://localhost:8787/ to see your worker in action
- * - Run `npm run deploy` to publish your worker
- *
- * Learn more at https://developers.cloudflare.com/workers/
- */
+import { fox } from "./routes/fox";
+import { intel } from "./routes/intel";
 
 export default {
-  async fetch(request, env, ctx) {
-    if (request.url.split('/').slice(3)[0] != '') return new Response('Not found', { status: 404 })
-    const cache = caches.default
-    const cache_key = request.url
-    let response = await cache.match(cache_key)
+	async fetch(request, env, ctx) {
+		const url = new URL(request.url)
+		const header = {
+			'content-type': 'application/json;charset=UTF-8',
+			'cache-control': 'public, max-age=7200'
+		}
 
-    if (!response) {
-      const url = 'https://www.intel.com/content/www/us/en/download/785597/intel-arc-iris-xe-graphics-windows.html'
-      const site = await fetch(url)
+		const cache = caches.default
+		const cache_key = `https://${url.hostname}${url.pathname}` // Only use the path for the cache key
+		
+		const res = await cache.match(cache_key)
+		if (res) return res;
 
-      var feed = {
-        version: 'https://jsonfeed.org/version/1',
-        title: 'Intel® Arc™ A770 Drivers',
-        home_page_url: url,
-        items: [],
-      }
+		if (url.pathname.match(new RegExp(/^\/intel\/?/g))) {
+			let _res = new Response(JSON.stringify(await intel()), { headers: header })
+			ctx.waitUntil(cache.put(cache_key, _res.clone()))
+			
+			return _res
+		}
+		if (url.pathname.match(new RegExp(/^\/fox\/?/g))) {
+			let _res = new Response(JSON.stringify(await fox()), { headers: header })
+			ctx.waitUntil(cache.put(cache_key, _res.clone()))
+			
+			return _res
+		}
 
-      await new HTMLRewriter()
-        .on('select#version-driver-select>option', {
-          element: (element) => {
-            feed.items.push({ id: '', title: '', url: `https://www.intel.com${element.getAttribute('value')}` })
-          },
-          text: (text) => {
-            feed.items.at(-1).id += `${text.text.replace(' (Latest)', '')}`
-            feed.items.at(-1).title += `${text.text.replace(' (Latest)', '')}`
-          },
-        })
-        .transform(site)
-        .arrayBuffer()
-
-      response = new Response(JSON.stringify(feed), {
-        headers: {
-          'content-type': 'application/json;charset=UTF-8',
-          'cache-control': 'public, max-age=300',
-        },
-      })
-
-      ctx.waitUntil(cache.put(cache_key, response.clone()))
-    }
-
-    return response
-  },
-}
+		return new Response('Hello world!');
+	},
+};

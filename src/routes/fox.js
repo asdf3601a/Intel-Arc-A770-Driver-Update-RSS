@@ -8,7 +8,7 @@ export async function fox() {
     const index = await fetch(list)
     const items = JSON.parse(await index.text())
         ?.result
-        .map(e => { return {id: e?._id, title: e?.title, tags: e?.type, url: homepage, date_published: e?.time} })
+        .map(e => { return {id: e?._id, title: e?.title, tags: e?.type, url: `/fox_detail/?search=${e?._id}`, date_published: e?.time} })
     
     return jsonFeed(title, homepage, items)
 }

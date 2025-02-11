@@ -22,7 +22,7 @@ export default {
             return _res;
         }
         if (url.pathname.match(new RegExp(/^\/fox\/?/g))) {
-            let _res = new Response(JSON.stringify(await fox(env['API_TOKEN'], env['API_ACCOUNT_ID'], env.inte_presistentCache), request.url), { headers: header });
+            let _res = new Response(JSON.stringify(await fox(env['API_TOKEN'], env['API_ACCOUNT_ID'], env.inte_presistentCache, request.url)), { headers: header });
             ctx.waitUntil(cache.put(cache_key, _res.clone()));
 
             return _res;

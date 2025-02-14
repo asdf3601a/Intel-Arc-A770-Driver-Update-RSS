@@ -24,7 +24,6 @@ export async function intel() {
     }
 
     const site = await fetch(url, {headers: header})
-    console.log(`intel fetch status is ${site.status}`)
 
     var items = []
     await new HTMLRewriter()
